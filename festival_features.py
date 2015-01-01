@@ -38,9 +38,41 @@ class Festival_features():
                 j+=1
             i+=1
             
+        self.cats = [0,1,2,3,4, 7,8, 10,11, 25, 29,31,39, 47]
+        ordinals = range(ls_np.shape[1])
+        dims = []
+        dicts = []
+        for i in cats:
+            ordinals.remove(i)
+            dims.append(len(np.unique(ls_np[:, i])))
+            if 'x' in ls_np[:, i]:
+                dims[-1] -= 1
+            unq = np.unique(ls_np[:, i])
+            unq = unq.tolist()
+            if 'x' in unq:
+                unq.remove('x')
+            unq=np.array(unq)
+            d = {}
+            for j in range(len(unq)):
+                d[unq[j]] = j
+            dicts.append(d)
+        dimension = sum(dims) + len(ordinals)
+        one_hot_data = np.zeros((ls_np.shape[0],dimension), dtype=int)
+        cnt = 0
+        for i in ordinals:
+            if ls_np[:, i] is 'x':
+                one_hot_data[:, cnt] = 0
+            else:
+                one_hot_data[:, cnt] = np.int(ls_np[:, i])
+            cnt += 1
+        for i in range(len(cats)):
+            one_hot_data[:, cnt:cnt+dims[i]] = 0
+            one_hot_data[:, cnt+dicts[ls_np[:,cats[i]]]] = 1
+            cnt += dims[i]
             
         return ls_np
-            
+    def _convert_line_to_array(self, line):
+        pass
     def read_list_header(self, hname):
         f= open(hname)
         cats = []
