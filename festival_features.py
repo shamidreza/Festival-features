@@ -8,25 +8,16 @@ festival_path = '/Users/hamid/Code/festival/festival/'
 
 class Festival_features():
     def __init__(self, lname, feats_file=None):
-        self.read_list(lname)
+        self._read_list(lname)
         if feats_file:
-            self.read_list_header(hname)
-    def read_list(self, lname):
-        chars = ['^', '-', '+', '=', '@', '_', '/', ':', '&', '#', '$', '!', ';', '|']
-
-        inx=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
-        
+            self._read_list_header(hname)
+    def _read_list(self, lname):
         ls = []
         cnt =0
         f= open(lname)
         for line in f:
             line = line[:-1]
-            line=line.replace('L-', 'L*')
-            for c in chars:
-                line=line.replace(c, ',')
-            vals=line.split(',')
-            for j in inx:
-                vals.remove(j)
+            vals = self._read_line(line)
             ls.append(vals)
             cnt += 1
         ls_np = np.zeros((len(ls), len(ls[0])), 'object')
@@ -38,7 +29,7 @@ class Festival_features():
                 j+=1
             i+=1
             
-        self.cats = [0,1,2,3,4, 7,8, 10,11, 25, 29,31,39, 47]
+        cats = [0,1,2,3,4, 7,8, 10,11, 25, 29,31,39, 47]
         ordinals = range(ls_np.shape[1])
         dims = []
         dicts = []
@@ -57,23 +48,45 @@ class Festival_features():
                 d[unq[j]] = j
             dicts.append(d)
         dimension = sum(dims) + len(ordinals)
-        one_hot_data = np.zeros((ls_np.shape[0],dimension), dtype=int)
-        cnt = 0
-        for i in ordinals:
-            if ls_np[:, i] is 'x':
-                one_hot_data[:, cnt] = 0
-            else:
-                one_hot_data[:, cnt] = np.int(ls_np[:, i])
-            cnt += 1
-        for i in range(len(cats)):
-            one_hot_data[:, cnt:cnt+dims[i]] = 0
-            one_hot_data[:, cnt+dicts[ls_np[:,cats[i]]]] = 1
-            cnt += dims[i]
-            
-        return ls_np
-    def _convert_line_to_array(self, line):
+        self.dimension = dimension
+        self.dicts = dicts
+        self.cats = cats
+        self.ordinals = ordinals
+        self.dims = dims
+        self._convert_line_to_array(line)
         pass
-    def read_list_header(self, hname):
+    def _read_line(self, line):
+        chars = ['^', '-', '+', '=', '@', '_', '/', ':', '&', '#', '$', '!', ';', '|']
+        inx=['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+        
+        #line = line[:-1]
+        line=line.replace('L-', 'L*')
+        for c in chars:
+            line=line.replace(c, ',')
+        vals=line.split(',')
+        for j in inx:
+            vals.remove(j)
+       
+        return vals
+            
+    def _convert_line_to_array(self, line):
+        vals=self._read_line(line)
+        one_hot_data = np.zeros((1,self.dimension), dtype=int)
+        cnt = 0
+        for i in self.ordinals:
+            if vals[i] is 'x':
+                one_hot_data[0, cnt] = 0
+            else:
+                one_hot_data[0, cnt] = np.int(vals[i])
+            cnt += 1
+        for i in range(len(self.cats)):
+            print i
+            one_hot_data[0, cnt:cnt+self.dims[i]] = 0
+            one_hot_data[0, cnt+self.dicts[i][vals[self.cats[i]]]] = 1
+            cnt += self.dims[i]
+            
+        return one_hot_data
+    def _read_list_header(self, hname):
         f= open(hname)
         cats = []
         for line in f:
@@ -82,7 +95,7 @@ class Festival_features():
                 prev_name = line
             if line.startswith('    printf ') and len(line) > len('    printf "@"')+1:
                 cats.append(prev_name)
-        pass    
+        self.label_name = cats    
             
     def convert_utt(self):
         pass
