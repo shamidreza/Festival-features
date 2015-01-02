@@ -47,6 +47,8 @@ class Festival_features():
             for j in range(len(unq)):
                 d[unq[j]] = j
             dicts.append(d)
+        dicts[-1]['H*H%'] = 4
+        dims[-1] += 1
         dimension = sum(dims) + len(ordinals)
         self.dimension = dimension
         self.dicts = dicts
@@ -61,6 +63,8 @@ class Festival_features():
         
         #line = line[:-1]
         line=line.replace('L-', 'L*')
+        line=line.replace('H-', 'H*')
+
         for c in chars:
             line=line.replace(c, ',')
         vals=line.split(',')
@@ -80,9 +84,12 @@ class Festival_features():
                 one_hot_data[0, cnt] = np.int(vals[i])
             cnt += 1
         for i in range(len(self.cats)):
-            print i
+            #print i
             one_hot_data[0, cnt:cnt+self.dims[i]] = 0
-            one_hot_data[0, cnt+self.dicts[i][vals[self.cats[i]]]] = 1
+            if vals[self.cats[i]] is 'x':
+                one_hot_data[0, cnt:cnt+self.dims[i]] = 1
+            else:
+                one_hot_data[0, cnt+self.dicts[i][vals[self.cats[i]]]] = 1
             cnt += self.dims[i]
             
         return one_hot_data
@@ -97,10 +104,27 @@ class Festival_features():
                 cats.append(prev_name)
         self.label_name = cats    
             
-    def convert_utt(self):
-        pass
-    def convert_dur(self):
-        pass
+    def convert_lab(self, lab_name):
+        data = np.zeros((0, self.dimension), dtype=int)
+        f= open(lab_name)
+        for line in f:
+            line = line[:-1]
+            v = self._convert_line_to_array(line)
+            data = np.r_[data, v]
+        return data
+    def convert_lab_time(self, lab_name):
+        data = np.zeros((0, self.dimension), dtype=int)
+        f= open(lab_name)
+        time = [0]
+        for line in f:
+            line = line[:-1]
+            st = int(line[:11])
+            en = int(line[11:22])
+            time.append(en/10000000.0)
+            line = line[22:]
+            v = self._convert_line_to_array(line)
+            data = np.r_[data, v]
+        return data, np.array(time)
     
 def Festival_fx(text):
     """ 
@@ -130,5 +154,11 @@ def Festival_fx(text):
 
 hname = '/Users/hamid/Code/hts/HTS-demo_CMU-ARCTIC-SLT2/data/scripts/label-full.awk'
 lname = '/Users/hamid/Code/hts/HTS-demo_CMU-ARCTIC-SLT2/data/lists/full.list'
+labtimename = '/Users/hamid/Code/hts/HTS-demo_CMU-ARCTIC-SLT2/data/labels/full/cmu_us_arctic_slt_a0001.lab'
+labname = '/Users/hamid/Code/hts/HTS-demo_CMU-ARCTIC-SLT2/data/labels/gen/alice01.lab'
 
-Festival_features(lname, hname)
+ff=Festival_features(lname, hname)
+data,time=ff.convert_lab_time(labtimename)
+print data.shape
+data=ff.convert_lab(labname)
+print data.shape
